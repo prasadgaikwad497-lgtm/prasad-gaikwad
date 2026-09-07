@@ -1,6 +1,5 @@
 import os
 import pickle
-import time
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -9,103 +8,99 @@ import streamlit as st
 # Page Configuration
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="Student Grade Predictor",
+    page_title="Student Result Predictor",
     page_icon="🎓",
     layout="centered",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ---------------------------------------------------------
-# Custom Styling (Vertical Layout, Modern Color Palette & Shadows)
+# Custom Styling (Pure White Background & Simple Cards)
 # ---------------------------------------------------------
 st.markdown(
     """
     <style>
-    /* Global background accent */
+    /* Force main app background to solid white */
     .stApp {
-        background-color: #F8FAFC;
+        background-color: #FFFFFF !important;
     }
 
-    /* Container Box Styling */
+    /* Limit container width for a clean vertical stack */
     .block-container {
-        max-width: 750px;
+        max-width: 650px;
         padding-top: 2rem;
         padding-bottom: 3rem;
     }
 
-    /* Header styling */
-    .app-header {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-        color: #FFFFFF;
-        padding: 28px 20px;
-        border-radius: 16px;
+    /* Minimalist Header */
+    .main-header {
         text-align: center;
-        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
         margin-bottom: 25px;
     }
-    .app-header h1 {
-        font-size: 2.2rem !important;
+    .main-header h1 {
+        font-size: 2.2rem;
+        color: #1E293B;
         font-weight: 700;
-        margin: 0;
-        color: #F8FAFC !important;
+        margin-bottom: 5px;
     }
-    .app-header p {
+    .main-header p {
+        color: #64748B;
         font-size: 1rem;
-        color: #94A3B8;
-        margin-top: 8px;
-        margin-bottom: 0;
     }
 
-    /* Vertical Form Card Styling */
+    /* Clean Form Styling */
     div[data-testid="stForm"] {
         background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
-        border-radius: 16px;
-        padding: 28px;
-        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
-    /* Input Field Labels */
-    .stNumberInput label {
-        font-weight: 600 !important;
-        color: #334155 !important;
-    }
-
-    /* Calculated Total Box */
+    /* Total Marks Box */
     .total-box {
-        background-color: #F1F5F9;
-        border-left: 4px solid #0EA5E9;
-        padding: 14px 18px;
+        background-color: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        padding: 12px;
         border-radius: 8px;
+        text-align: center;
         font-weight: 600;
-        color: #0F172A;
-        margin-top: 10px;
+        color: #334155;
+        margin-top: 15px;
         margin-bottom: 15px;
     }
 
-    /* Result Banner */
-    .result-card {
-        background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
-        color: #FFFFFF;
-        padding: 28px;
-        border-radius: 16px;
+    /* Result Cards */
+    .pass-card {
+        background-color: #10B981;
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
         text-align: center;
-        box-shadow: 0 12px 24px -4px rgba(2, 132, 199, 0.35);
-        margin-top: 25px;
-        margin-bottom: 25px;
+        margin-top: 20px;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    }
+    .fail-card {
+        background-color: #EF4444;
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        margin-top: 20px;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
     }
     .result-card h2 {
-        color: #FFFFFF !important;
-        margin: 8px 0 0 0;
-        font-size: 2.2rem;
+        color: white !important;
+        font-size: 2.5rem;
         font-weight: 800;
+        margin: 0;
     }
     .result-card p {
-        font-size: 1.05rem;
+        margin: 0;
+        font-size: 1rem;
+        opacity: 0.9;
         text-transform: uppercase;
         letter-spacing: 1px;
-        color: #BAE6FD;
-        margin: 0;
     }
     </style>
 """,
@@ -113,7 +108,7 @@ st.markdown(
 )
 
 # ---------------------------------------------------------
-# Model Loading
+# Load Trained Model
 # ---------------------------------------------------------
 MODEL_FILE = "model.pkl"
 
@@ -129,13 +124,13 @@ def load_model():
 model = load_model()
 
 # ---------------------------------------------------------
-# Header Section
+# Application Header
 # ---------------------------------------------------------
 st.markdown(
     """
-    <div class="app-header">
-        <h1>🎓 Academic Performance Predictor</h1>
-        <p>Enter individual subject scores below to evaluate academic output</p>
+    <div class="main-header">
+        <h1>🎓 Student Result Predictor</h1>
+        <p>Enter individual subject scores to predict Pass or Fail</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -143,24 +138,20 @@ st.markdown(
 
 if model is None:
     st.error(
-        f"⚠️ File `{MODEL_FILE}` was not found in the project root directory. Please verify that the trained model file is uploaded."
+        f"⚠️ `{MODEL_FILE}` was not found in the project root folder. Please ensure your model file is uploaded."
     )
     st.stop()
 
 # ---------------------------------------------------------
-# Vertical Form Layout
+# Vertical Form Fields
 # ---------------------------------------------------------
-with st.form("grade_prediction_form"):
-    st.subheader("📋 Student Parameters & Subject Marks")
-
+with st.form("prediction_form"):
     unnamed_0 = st.number_input(
         "Student ID / Index (Unnamed: 0)",
         min_value=0,
         value=1,
         step=1,
-        help="Identifier index corresponding to the dataset format",
     )
-
     hindi = st.number_input(
         "Hindi", min_value=0, max_value=100, value=75, step=1
     )
@@ -179,36 +170,34 @@ with st.form("grade_prediction_form"):
     geography = st.number_input(
         "Geography", min_value=0, max_value=100, value=78, step=1
     )
-
     div = st.number_input(
         "Division Code (Div)",
         min_value=0,
         value=1,
         step=1,
-        help="Division code identifier",
     )
 
-    # Dynamic total calculation
+    # Automatic Total Score Calculation
     total_calculated = hindi + english + science + maths + history + geography
 
     st.markdown(
         f"""
         <div class="total-box">
-            📊 Calculated Total Marks: <span style="color: #0EA5E9;">{total_calculated} / 600</span>
+            Calculated Total Score: <b>{total_calculated} / 600</b>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
     submit_button = st.form_submit_button(
-        "🚀 Compute Prediction", use_container_width=True
+        "Predict Result", use_container_width=True
     )
 
 # ---------------------------------------------------------
-# Prediction Execution
+# Prediction & Pass/Fail Output Logic
 # ---------------------------------------------------------
 if submit_button:
-    # Construct exact feature order:
+    # Feature array in exact trained sequence:
     # ['Unnamed: 0', 'Hindi', 'English', 'Science', 'Maths', 'History', 'Geograpgy', 'Total', 'Div']
     input_data = np.array(
         [
@@ -226,26 +215,34 @@ if submit_button:
         ]
     )
 
-    with st.spinner("Processing features..."):
-        time.sleep(0.5)
-        prediction = model.predict(input_data)[0]
+    # Get model prediction (e.g., 1 or 0)
+    raw_prediction = model.predict(input_data)[0]
 
-    # Native animations replacing confetti dependency
-    st.balloons()
+    # Convert 1/0 or string equivalent into PASS / FAIL display
+    if str(raw_prediction).strip() in ["1", "1.0", "Pass", "PASS"]:
+        st.balloons()
+        st.markdown(
+            """
+            <div class="pass-card result-card">
+                <p>Final Outcome</p>
+                <h2>PASS 🎉</h2>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            """
+            <div class="fail-card result-card">
+                <p>Final Outcome</p>
+                <h2>FAIL ❌</h2>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    # Result Display Card
-    st.markdown(
-        f"""
-        <div class="result-card">
-            <p>Predicted Performance Grade</p>
-            <h2>{prediction}</h2>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Input Breakdown Expander
-    with st.expander("📄 Review Submitted Input Summary"):
+    # Summary View
+    with st.expander("Show Submitted Details"):
         summary_df = pd.DataFrame(
             input_data,
             columns=[
