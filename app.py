@@ -4,10 +4,9 @@ import time
 import numpy as np
 import pandas as pd
 import streamlit as st
-from streamlit_confetti import confetti
 
 # ---------------------------------------------------------
-# Page Configuration & Custom CSS
+# Page Configuration
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="Student Grade Predictor",
@@ -16,50 +15,97 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS for attractive UI styling
+# ---------------------------------------------------------
+# Custom Styling (Vertical Layout, Modern Color Palette & Shadows)
+# ---------------------------------------------------------
 st.markdown(
     """
     <style>
-    /* Main title formatting */
-    .main-title {
-        font-size: 2.6rem;
+    /* Global background accent */
+    .stApp {
+        background-color: #F8FAFC;
+    }
+
+    /* Container Box Styling */
+    .block-container {
+        max-width: 750px;
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+    }
+
+    /* Header styling */
+    .app-header {
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        color: #FFFFFF;
+        padding: 28px 20px;
+        border-radius: 16px;
+        text-align: center;
+        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
+        margin-bottom: 25px;
+    }
+    .app-header h1 {
+        font-size: 2.2rem !important;
         font-weight: 700;
-        color: #1E3A8A;
-        text-align: center;
-        margin-bottom: 0.2rem;
+        margin: 0;
+        color: #F8FAFC !important;
     }
-    .sub-title {
-        font-size: 1.1rem;
-        color: #4B5563;
-        text-align: center;
-        margin-bottom: 2rem;
+    .app-header p {
+        font-size: 1rem;
+        color: #94A3B8;
+        margin-top: 8px;
+        margin-bottom: 0;
     }
-    /* Input section cards */
-    .css-1r6slb0, .stForm {
-        background-color: #F9FAFB;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+
+    /* Vertical Form Card Styling */
+    div[data-testid="stForm"] {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 28px;
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
     }
-    /* Result card */
+
+    /* Input Field Labels */
+    .stNumberInput label {
+        font-weight: 600 !important;
+        color: #334155 !important;
+    }
+
+    /* Calculated Total Box */
+    .total-box {
+        background-color: #F1F5F9;
+        border-left: 4px solid #0EA5E9;
+        padding: 14px 18px;
+        border-radius: 8px;
+        font-weight: 600;
+        color: #0F172A;
+        margin-top: 10px;
+        margin-bottom: 15px;
+    }
+
+    /* Result Banner */
     .result-card {
-        background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
-        color: white;
-        padding: 25px;
-        border-radius: 15px;
+        background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+        color: #FFFFFF;
+        padding: 28px;
+        border-radius: 16px;
         text-align: center;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
-        margin-top: 20px;
+        box-shadow: 0 12px 24px -4px rgba(2, 132, 199, 0.35);
+        margin-top: 25px;
+        margin-bottom: 25px;
     }
     .result-card h2 {
         color: #FFFFFF !important;
-        margin: 0;
-        font-size: 2rem;
+        margin: 8px 0 0 0;
+        font-size: 2.2rem;
+        font-weight: 800;
     }
     .result-card p {
-        font-size: 1.1rem;
-        margin-top: 5px;
-        opacity: 0.9;
+        font-size: 1.05rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #BAE6FD;
+        margin: 0;
     }
     </style>
 """,
@@ -77,8 +123,7 @@ def load_model():
     if not os.path.exists(MODEL_FILE):
         return None
     with open(MODEL_FILE, "rb") as f:
-        model = pickle.load(f)
-    return model
+        return pickle.load(f)
 
 
 model = load_model()
@@ -87,85 +132,85 @@ model = load_model()
 # Header Section
 # ---------------------------------------------------------
 st.markdown(
-    '<div class="main-title">🎓 Academic Performance Predictor</div>',
-    unsafe_allow_html=True,
-)
-st.markdown(
-    '<div class="sub-title">Enter student subject marks to calculate predictions using your trained KNN model.</div>',
+    """
+    <div class="app-header">
+        <h1>🎓 Academic Performance Predictor</h1>
+        <p>Enter individual subject scores below to evaluate academic output</p>
+    </div>
+    """,
     unsafe_allow_html=True,
 )
 
 if model is None:
     st.error(
-        f"⚠️ Could not find `{MODEL_FILE}` in the current directory. Please make sure the file is present alongside `app.py`."
+        f"⚠️ File `{MODEL_FILE}` was not found in the project root directory. Please verify that the trained model file is uploaded."
     )
     st.stop()
 
 # ---------------------------------------------------------
-# Feature Input Sidebar & Form
+# Vertical Form Layout
 # ---------------------------------------------------------
-st.sidebar.header("📊 Options & Info")
-st.sidebar.info(
-    "This app uses a **K-Neighbors Classifier** trained on student academic records."
-)
+with st.form("grade_prediction_form"):
+    st.subheader("📋 Student Parameters & Subject Marks")
 
-st.subheader("📝 Enter Student Marks")
+    unnamed_0 = st.number_input(
+        "Student ID / Index (Unnamed: 0)",
+        min_value=0,
+        value=1,
+        step=1,
+        help="Identifier index corresponding to the dataset format",
+    )
 
-with st.form("prediction_form"):
-    col1, col2 = st.columns(2)
+    hindi = st.number_input(
+        "Hindi", min_value=0, max_value=100, value=75, step=1
+    )
+    english = st.number_input(
+        "English", min_value=0, max_value=100, value=80, step=1
+    )
+    science = st.number_input(
+        "Science", min_value=0, max_value=100, value=85, step=1
+    )
+    maths = st.number_input(
+        "Maths", min_value=0, max_value=100, value=90, step=1
+    )
+    history = st.number_input(
+        "History", min_value=0, max_value=100, value=70, step=1
+    )
+    geography = st.number_input(
+        "Geography", min_value=0, max_value=100, value=78, step=1
+    )
 
-    with col1:
-        unnamed_0 = st.number_input(
-            "Student ID / Index (Unnamed: 0)",
-            min_value=0,
-            value=1,
-            step=1,
-            help="Index or ID entry from the dataset",
-        )
-        hindi = st.number_input(
-            "Hindi", min_value=0, max_value=100, value=75, step=1
-        )
-        english = st.number_input(
-            "English", min_value=0, max_value=100, value=80, step=1
-        )
-        science = st.number_input(
-            "Science", min_value=0, max_value=100, value=85, step=1
-        )
+    div = st.number_input(
+        "Division Code (Div)",
+        min_value=0,
+        value=1,
+        step=1,
+        help="Division code identifier",
+    )
 
-    with col2:
-        maths = st.number_input(
-            "Maths", min_value=0, max_value=100, value=90, step=1
-        )
-        history = st.number_input(
-            "History", min_value=0, max_value=100, value=70, step=1
-        )
-        geography = st.number_input(
-            "Geography", min_value=0, max_value=100, value=78, step=1
-        )
-        div = st.number_input(
-            "Division Code (Div)",
-            min_value=0,
-            value=1,
-            step=1,
-            help="Division category code",
-        )
-
-    # Automatic calculation of total marks
+    # Dynamic total calculation
     total_calculated = hindi + english + science + maths + history + geography
-    st.markdown(f"**Calculated Total Marks:** `{total_calculated}`")
 
-    # Form submission button
+    st.markdown(
+        f"""
+        <div class="total-box">
+            📊 Calculated Total Marks: <span style="color: #0EA5E9;">{total_calculated} / 600</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
     submit_button = st.form_submit_button(
-        "🚀 Predict Result", use_container_width=True
+        "🚀 Compute Prediction", use_container_width=True
     )
 
 # ---------------------------------------------------------
-# Prediction & Visual Effects
+# Prediction Execution
 # ---------------------------------------------------------
 if submit_button:
-    # Prepare features array in the exact order expected by the model:
+    # Construct exact feature order:
     # ['Unnamed: 0', 'Hindi', 'English', 'Science', 'Maths', 'History', 'Geograpgy', 'Total', 'Div']
-    input_features = np.array(
+    input_data = np.array(
         [
             [
                 unnamed_0,
@@ -181,30 +226,28 @@ if submit_button:
         ]
     )
 
-    # Add interactive loading effect
-    with st.spinner("Analyzing marks and computing prediction..."):
-        time.sleep(0.8)
-        prediction = model.predict(input_features)[0]
+    with st.spinner("Processing features..."):
+        time.sleep(0.5)
+        prediction = model.predict(input_data)[0]
 
-    # Trigger celebration effect (Confetti + Balloons)
-    confetti()
+    # Native animations replacing confetti dependency
     st.balloons()
 
-    # Display Result Card
+    # Result Display Card
     st.markdown(
         f"""
         <div class="result-card">
-            <p>Prediction Outcome</p>
-            <h2>Result / Grade Class: {prediction}</h2>
+            <p>Predicted Performance Grade</p>
+            <h2>{prediction}</h2>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # Feature breakdown expandable view
-    with st.expander("🔍 View Input Summary"):
+    # Input Breakdown Expander
+    with st.expander("📄 Review Submitted Input Summary"):
         summary_df = pd.DataFrame(
-            input_features,
+            input_data,
             columns=[
                 "Unnamed: 0",
                 "Hindi",
